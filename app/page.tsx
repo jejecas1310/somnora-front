@@ -7,7 +7,11 @@ import {
   ChevronLeft, ChevronRight, Wifi, WifiOff, AlertTriangle, Check
 } from 'lucide-react';
 
-// --- DONNÉES DE SECOURS (Design Original Intact) ---
+// --- CONFIGURATION DE L'IMAGE D'ACCUEIL (HERO) ---
+// Si votre image est dans le dossier 'public', mettez juste "/nom-de-votre-image.jpg"
+const HERO_IMAGE = "/reunis.jpg";
+
+// --- DONNÉES DE SECOURS ---
 const INITIAL_MOCK = {
   name: "Le Compagnon Respirant Somnora",
   tagline: "Synchronisation haptique et sensorielle.",
@@ -262,7 +266,7 @@ export default function App() {
                 </div>
                 <div className="lg:col-span-5 xl:col-span-6 relative group px-4 lg:px-0">
                   <div className="rounded-[40px] md:rounded-[80px] overflow-hidden aspect-[4/5] shadow-2xl border border-stone-100 relative">
-                    <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" alt="Somnora Atmosphere" className="w-full h-full object-cover grayscale-[0.1] group-hover:scale-105 transition-transform duration-[3s]" />
+                    <img src={HERO_IMAGE} alt="Somnora Atmosphere" className="w-full h-full object-cover grayscale-[0.1] group-hover:scale-105 transition-transform duration-[3s]" />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/20 to-transparent"></div>
                   </div>
                 </div>
@@ -295,7 +299,7 @@ export default function App() {
               </div>
             </section>
 
-            {/* SECTION ACHAT AVEC % DE RÉDUCTION */}
+            {/* SECTION ACHAT */}
             <section id="achat" className="py-24 md:py-40 px-6 max-w-6xl mx-auto scroll-mt-20">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 xl:gap-24">
                 <div className="lg:col-span-5 xl:col-span-6 hidden lg:block">
@@ -315,7 +319,6 @@ export default function App() {
                           
                           return (
                             <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 md:p-8 rounded-[24px] md:rounded-[32px] border-2 transition-all flex justify-between items-center group relative ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20 shadow-lg' : 'border-stone-100 bg-white hover:border-stone-200'}`}>
-                              {/* BADGE POPULAIRE FIXE (sans clignotement) */}
                               {b.popular && <span className="absolute -top-3 left-6 bg-emerald-800 text-white text-[8px] font-bold uppercase px-3 py-1 rounded-full tracking-widest shadow-lg">Populaire</span>}
                               <div className="text-left">
                                 <p className="font-bold uppercase tracking-widest text-xs md:text-sm mb-1">{b.label}</p>
