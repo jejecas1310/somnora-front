@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-// --- TYPES ---
+// --- TYPES TYPESCRIPT ---
 interface Variation {
   id: string;
   name: string;
@@ -37,7 +37,7 @@ interface CartItem {
   originalPrice: number;
 }
 
-// --- DONNÉES (On remet tes données d'origine pour que le design revienne) ---
+// Données temporaires (en attendant la liaison o2switch)
 const mockProduct = {
   name: "Le Compagnon Respirant Somnora",
   tagline: "Synchronisation haptique et sensorielle.",
@@ -59,7 +59,7 @@ const mockProduct = {
   ] as Bundle[]
 };
 
-// --- COMPOSANT DIAPORAMA ---
+// Composant Diaporama
 const Diaporama = ({ variations, activeVariationId, className, innerClassName }: { 
   variations: Variation[], 
   activeVariationId: string, 
@@ -108,7 +108,6 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
   );
 };
 
-// --- COMPOSANT PRINCIPAL ---
 export default function App() {
   const [selectedBundle, setSelectedBundle] = useState<Bundle>(mockProduct.bundles[1]);
   const [selections, setSelections] = useState<Variation[]>([mockProduct.variations[0], mockProduct.variations[0]]);
@@ -125,9 +124,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.body.style.overflow = (isMenuOpen || isCartOpen) ? 'hidden' : 'unset';
-    }
+    document.body.style.overflow = (isMenuOpen || isCartOpen) ? 'hidden' : 'unset';
   }, [isMenuOpen, isCartOpen]);
 
   const scrollToSection = (id: string) => {
@@ -194,6 +191,7 @@ export default function App() {
   };
 
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.qty), 0);
+  const cartSavings = cart.reduce((total, item) => total + ((item.originalPrice - item.price) * item.qty), 0);
 
   const renderLegalContent = () => {
     const content: Record<string, { title: string, sections: { t: string, c: string }[] }> = {
@@ -297,46 +295,113 @@ export default function App() {
         {activePage === 'home' ? (
           <>
             {/* HERO */}
-            <section className="relative min-h-screen flex items-center px-6 md:px-10 max-w-7xl mx-auto pt-24">
+            <section className="relative min-h-screen flex items-center px-6 md:px-10 max-w-7xl mx-auto pt-24 text-center lg:text-left">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 w-full items-center">
-                <div className="lg:col-span-6 z-10 text-center lg:text-left">
-                  <h1 className="text-6xl md:text-8xl font-luxury-serif italic mb-10 leading-[0.95] tracking-tighter animate-luxury-float">La science <span className="not-italic block lg:inline">Du Calme.</span></h1>
-                  <p className="text-lg text-stone-700 mb-12 leading-relaxed max-w-md italic mx-auto lg:mx-0">{mockProduct.shortDesc}</p>
-                  <button onClick={() => scrollToSection('achat')} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em]">Découvrir l'offre</button>
+                <div className="lg:col-span-6 z-10">
+                  <h1 className="text-6xl md:text-8xl font-luxury-serif italic mb-10 leading-[0.95] tracking-tighter animate-luxury-float text-stone-950">
+                    La science <span className="not-italic block lg:inline">Du Calme.</span>
+                  </h1>
+                  <p className="text-lg text-stone-700 mb-12 leading-relaxed max-w-md italic mx-auto lg:mx-0">
+                    {mockProduct.shortDesc}
+                  </p>
+                  <button onClick={() => scrollToSection('achat')} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-950 transition-all">
+                    Découvrir l'offre
+                  </button>
                 </div>
-                <div className="lg:col-span-6"><img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" className="rounded-[60px] shadow-2xl" alt="" /></div>
+                <div className="lg:col-span-6 relative">
+                  <div className="rounded-[60px] overflow-hidden aspect-[4/5] shadow-2xl border border-stone-200">
+                    <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" alt="Somnora Atmosphere" className="w-full h-full object-cover" />
+                  </div>
+                </div>
               </div>
             </section>
 
             {/* SCIENCE */}
-            <section id="science" className="bg-stone-50 py-24 md:py-40"><div className="max-w-7xl mx-auto px-6 text-center"><h2 className="text-4xl md:text-6xl font-luxury-serif italic mb-20">Une technologie de pointe.</h2></div></section>
+            <section id="science" className="bg-stone-50 py-24 md:py-40 text-center">
+              <div className="max-w-7xl mx-auto px-6">
+                <h2 className="text-4xl md:text-6xl font-luxury-serif italic mb-10">Une technologie de pointe.</h2>
+                <p className="text-sm uppercase tracking-widest text-stone-400 font-bold mb-20">Régulation sensorielle par mimétisme.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                   {/* Points forts */}
+                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100">
+                      <Wind className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} />
+                      <h3 className="font-bold uppercase tracking-widest mb-4">Rythme Naturel</h3>
+                      <p className="text-sm text-stone-600">Le système simule une respiration apaisante pour induire le sommeil.</p>
+                   </div>
+                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100">
+                      <Music className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} />
+                      <h3 className="font-bold uppercase tracking-widest mb-4">Sons Apaisants</h3>
+                      <p className="text-sm text-stone-600">Bruits blancs et ambiances sonores naturelles intégrées.</p>
+                   </div>
+                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100">
+                      <Sun className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} />
+                      <h3 className="font-bold uppercase tracking-widest mb-4">Lumière Douce</h3>
+                      <p className="text-sm text-stone-600">Cycles lumineux synchronisés pour réduire l'anxiété nocturne.</p>
+                   </div>
+                </div>
+              </div>
+            </section>
 
             {/* ACHAT */}
-            <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                <div className="lg:col-span-6 hidden lg:block"><Diaporama variations={mockProduct.variations} activeVariationId={selections[0]?.id} className="aspect-square" innerClassName="rounded-[40px] shadow-xl" /></div>
+            <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto scroll-mt-20">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24">
+                <div className="lg:col-span-6 hidden lg:block">
+                  <div className="sticky top-40 bg-white p-8 rounded-[60px] shadow-xl border border-stone-200 aspect-square">
+                    <Diaporama variations={mockProduct.variations} activeVariationId={selections[0]?.id} className="w-full h-full" innerClassName="rounded-[40px]" />
+                  </div>
+                </div>
                 <div className="lg:col-span-6">
-                  <h2 className="text-4xl font-luxury-serif italic mb-12">Adopter Somnora</h2>
-                  <div className="space-y-12">
-                    {mockProduct.bundles.map(b => (
-                      <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white'}`}>
-                        <div className="text-left"><p className="font-bold uppercase tracking-widest text-sm">{b.label}</p><p className="text-xs text-stone-400">{b.bundleQty} unité(s)</p></div>
-                        <p className="text-lg font-bold">{b.price.toFixed(2)} €</p>
-                      </button>
-                    ))}
-                    <div className="space-y-6">
-                      {selections.map((_, idx) => (
-                        <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
-                          <p className="text-[10px] font-bold uppercase mb-4 opacity-40">Compagnon n°{idx+1}</p>
-                          <div className="flex gap-4">
-                            {mockProduct.variations.map(v => (
-                              <button key={v.id} onClick={() => handleSelectionChange(idx, v)} className={`w-12 h-12 rounded-full border-2 p-1 ${selections[idx]?.id === v.id ? 'border-emerald-800' : 'border-transparent opacity-40'}`}><img src={v.image} className="w-full h-full rounded-full object-cover" alt="" /></button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                  <h2 className="text-4xl md:text-5xl font-luxury-serif italic mb-12">Adopter Somnora.</h2>
+                  <div className="space-y-16">
+                    {/* Packs */}
+                    <div>
+                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 mb-8 border-b border-stone-100 pb-2">1. Choisissez votre offre</h4>
+                      <div className="space-y-4">
+                        {mockProduct.bundles.map(b => (
+                          <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white'}`}>
+                            <div className="text-left">
+                              <p className="font-bold uppercase tracking-widest text-sm">{b.label}</p>
+                              <p className="text-xs text-stone-400">{b.bundleQty} unité(s) Somnora</p>
+                            </div>
+                            <p className="text-lg font-bold">{b.price.toFixed(2)} €</p>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-widest hover:bg-emerald-950 transition-all">Ajouter au panier</button>
+                    {/* Personnalisation */}
+                    <div>
+                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 mb-8 border-b border-stone-100 pb-2">2. Personnalisez vos modèles</h4>
+                      <div className="space-y-6">
+                        {selections.map((_, idx) => (
+                          <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                            <p className="text-[10px] font-bold uppercase mb-6 opacity-40 tracking-widest">Compagnon n°{idx+1}</p>
+                            <div className="flex gap-4 md:gap-8 justify-center md:justify-start">
+                              {mockProduct.variations.map(v => (
+                                <button key={v.id} onClick={() => handleSelectionChange(idx, v)} className="flex flex-col items-center gap-3">
+                                  <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40'}`}>
+                                    <img src={v.image} className="w-full h-full rounded-full object-cover" alt="" />
+                                  </div>
+                                  <span className={`text-[9px] font-bold uppercase tracking-tighter ${selections[idx]?.id === v.id ? 'text-stone-900' : 'text-stone-400'}`}>{v.value}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* CTA Final */}
+                    <div className="pt-10 border-t border-stone-200">
+                      <div className="flex justify-between items-center mb-8">
+                        <span className="text-4xl font-light">{selectedBundle.price.toFixed(2)} €</span>
+                        <div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-4 py-2 rounded-full uppercase tracking-widest">Livraison Gratuite</div>
+                      </div>
+                      <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 transition-all shadow-xl active:scale-95">
+                        Ajouter au panier
+                      </button>
+                      <p className="mt-8 text-center text-[10px] font-bold uppercase tracking-widest opacity-40 flex items-center justify-center gap-2">
+                        <ShieldCheck className="w-4 h-4" /> Garantie Satisfait 30 Jours
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -347,14 +412,18 @@ export default function App() {
         )}
       </main>
 
-      <footer className="bg-stone-950 text-white py-24 px-10">
-        <div className="max-w-7xl mx-auto flex flex-col items-center gap-12">
+      {/* FOOTER */}
+      <footer className="bg-stone-950 text-white py-24 px-10 text-center">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-16">
           <span className="text-3xl font-medium tracking-[0.5em] uppercase">Somnora</span>
-          <div className="flex flex-col md:flex-row gap-8 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">
-            <button onClick={() => setActivePage('legal')}>Mentions Légales</button>
-            <button onClick={() => setActivePage('cgv')}>CGV & Retours</button>
-            <button onClick={() => setActivePage('privacy')}>Confidentialité</button>
+          <div className="flex flex-col md:flex-row gap-10 text-[10px] font-bold uppercase tracking-[0.3em] text-stone-500">
+            <button onClick={() => setActivePage('legal')} className="hover:text-white transition-colors">Mentions Légales</button>
+            <button onClick={() => setActivePage('cgv')} className="hover:text-white transition-colors">CGV & Retours</button>
+            <button onClick={() => setActivePage('privacy')} className="hover:text-white transition-colors">Confidentialité</button>
           </div>
+          <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em] pt-10 border-t border-white/5 w-full">
+            Somnora Maison de Repos — {new Date().getFullYear()} — L'Art du Sommeil
+          </p>
         </div>
       </footer>
     </div>
