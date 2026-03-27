@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Wind, Volume2, Star, ArrowRight, Sun, Music,
   Menu, ShoppingCart, Circle, X, Trash2, Plus, Minus,
-  ChevronLeft, ChevronRight, Wifi, WifiOff
+  ChevronLeft, ChevronRight, Wifi, WifiOff, AlertTriangle
 } from 'lucide-react';
 
 // --- DONNÉES DE SECOURS ---
@@ -72,23 +72,31 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<any[]>([]);
 
-  // Initialisation des sélections au démarrage
+  // Initialisation sécurisée
   useEffect(() => {
-    setSelections(Array(selectedBundle.bundleQty).fill(INITIAL_MOCK.variations[0]));
+    setSelections(Array(INITIAL_MOCK.bundles[1].bundleQty).fill(INITIAL_MOCK.variations[0]));
   }, []);
 
-  // Tentative de connexion WordPress
+  // Tentative de connexion WordPress optimisée
   useEffect(() => {
     const fetchWPData = async () => {
       try {
+        // Utilisation de l'URL HTTP simple pour éviter les blocages SSL immédiats
         const apiUrl = 'http://somnora.diwo9363.odns.fr/graphql';
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout après 5s
+
         const res = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: `query { products(first: 1) { nodes { name ... on VariableProduct { variations { nodes { id name price image { node { sourceUrl } } } } } } } }`
-          })
+          }),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!res.ok) throw new Error();
 
@@ -149,7 +157,7 @@ export default function App() {
         .font-luxury-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; }
       `}</style>
 
-      {/* HEADER AVEC STATUS */}
+      {/* HEADER AVEC STATUS DE CONNEXION */}
       <header className={`fixed top-0 w-full z-50 transition-all duration-700 ${scrolled ? 'bg-stone-100/95 backdrop-blur-xl py-4 border-b border-stone-200' : 'bg-transparent py-8'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
@@ -158,9 +166,15 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* BADGE DE CONNEXION POUR SORTIR DE LA BOUCLE */}
-            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${connectionStatus === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : connectionStatus === 'failed' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-stone-50 border-stone-200 text-stone-400'}`}>
-              {connectionStatus === 'success' ? <><Wifi className="w-3 h-3" /> Connecté à o2switch</> : connectionStatus === 'failed' ? <><WifiOff className="w-3 h-3" /> Mode Secours (Bitdefender/SSL)</> : 'Vérification...'}
+            {/* BADGE DE STATUS DYNAMIQUE */}
+            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border transition-colors ${
+              connectionStatus === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 
+              connectionStatus === 'failed' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
+              'bg-stone-50 border-stone-200 text-stone-400'
+            }`}>
+              {connectionStatus === 'success' ? <><Wifi className="w-3 h-3" /> Live o2switch</> : 
+               connectionStatus === 'failed' ? <><AlertTriangle className="w-3 h-3" /> Mode Secours (SSL/Bitdefender)</> : 
+               'Connexion...'}
             </div>
             
             <button onClick={() => setIsCartOpen(true)} className="relative p-2">
@@ -171,23 +185,25 @@ export default function App() {
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="relative min-h-screen flex items-center px-6 max-w-7xl mx-auto pt-24">
+      {/* HERO SECTION */}
+      <section className="relative min-h-screen flex items-center px-6 max-w-7xl mx-auto pt-24 text-center lg:text-left">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 w-full items-center">
-          <div className="lg:col-span-6 text-center lg:text-left">
+          <div className="lg:col-span-6 z-10">
             <h1 className="text-6xl md:text-8xl font-luxury-serif italic mb-10 leading-[0.95] tracking-tighter animate-luxury-float text-stone-950">
               La science <span className="not-italic block lg:inline">Du Calme.</span>
             </h1>
             <p className="text-lg text-stone-700 mb-12 italic max-w-md mx-auto lg:mx-0">{productData.shortDesc}</p>
-            <button onClick={() => document.getElementById('achat')?.scrollIntoView({behavior: 'smooth'})} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-lg">Découvrir l'offre</button>
+            <button onClick={() => document.getElementById('achat')?.scrollIntoView({behavior: 'smooth'})} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-lg hover:bg-emerald-950 transition-colors">Découvrir l'offre</button>
           </div>
-          <div className="lg:col-span-6">
-            <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" className="rounded-[60px] shadow-2xl border border-stone-100" alt="" />
+          <div className="lg:col-span-6 relative">
+            <div className="rounded-[60px] overflow-hidden aspect-[4/5] shadow-2xl border border-stone-100">
+               <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" alt="Somnora Atmosphere" className="w-full h-full object-cover" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ACHAT */}
+      {/* SECTION ACHAT */}
       <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto scroll-mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <div className="lg:col-span-6 hidden lg:block">
@@ -214,7 +230,7 @@ export default function App() {
                     <div className="flex gap-4 justify-center md:justify-start">
                       {productData.variations.map((v: any) => (
                         <button key={v.id} onClick={() => { const s = [...selections]; s[idx] = v; setSelections(s); }} className={`w-14 h-14 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40 hover:opacity-100'}`}>
-                          <img src={v.image} className="w-full h-full rounded-full object-cover" alt="" />
+                          <img src={v.image} className="w-full h-full rounded-full object-cover" alt={v.name} />
                         </button>
                       ))}
                     </div>
@@ -222,7 +238,7 @@ export default function App() {
                 ))}
               </div>
 
-              <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 shadow-xl active:scale-95">
+              <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 shadow-xl active:scale-95 transition-all">
                 Ajouter au panier
               </button>
             </div>
@@ -230,9 +246,9 @@ export default function App() {
         </div>
       </section>
 
-      <footer className="bg-stone-950 text-white py-24 px-10 text-center">
+      <footer className="bg-stone-950 text-white py-24 px-10 text-center border-t border-white/5">
         <span className="text-3xl font-medium tracking-[0.5em] uppercase block mb-8">Somnora</span>
-        <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em]">© {new Date().getFullYear()} — Maison de Repos Somnora</p>
+        <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em]">© {new Date().getFullYear()} — Maison de Repos Somnora — L'Art du Sommeil</p>
       </footer>
 
       {/* PANIER */}
@@ -240,15 +256,22 @@ export default function App() {
         <>
           <div className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[60]" onClick={() => setIsCartOpen(false)}></div>
           <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[70] p-8 shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
-            <div className="flex justify-between items-center mb-8"><h2 className="font-bold uppercase text-xs tracking-widest">Votre Panier</h2><button onClick={() => setIsCartOpen(false)}><X className="w-6 h-6" /></button></div>
+            <div className="flex justify-between items-center mb-8"><h2 className="font-bold uppercase text-xs tracking-widest">Votre Panier</h2><button onClick={() => setIsCartOpen(false)}><X className="w-6 h-6 text-stone-400" /></button></div>
             <div className="flex-1 overflow-y-auto space-y-6">
               {cart.map((item, i) => (
-                <div key={i} className="flex gap-4 items-center">
-                  <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt="" />
+                <div key={i} className="flex gap-4 items-center animate-in fade-in slide-in-from-bottom-2">
+                  <img src={item.image} className="w-16 h-16 rounded-xl object-cover border border-stone-100" alt="" />
                   <div className="flex-1"><p className="text-[10px] font-bold uppercase">{item.name}</p><p className="text-[9px] text-stone-400 uppercase">{item.variantName}</p><p className="font-bold text-sm mt-1">{item.price.toFixed(2)} €</p></div>
                 </div>
               ))}
+              {cart.length === 0 && <p className="text-center italic text-stone-400 py-10 font-luxury-serif">Le panier est vide</p>}
             </div>
+            {cart.length > 0 && (
+              <div className="pt-8 border-t border-stone-100">
+                <div className="flex justify-between mb-8 text-xl font-light"><span>Total</span><span>{cart.reduce((t, i) => t + i.price, 0).toFixed(2)} €</span></div>
+                <button className="w-full bg-stone-950 text-white py-6 rounded-full font-bold uppercase text-[10px] tracking-widest shadow-lg">Commander</button>
+              </div>
+            )}
           </div>
         </>
       )}
