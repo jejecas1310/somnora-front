@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Wind, Volume2, Star, ArrowRight, Sun, Music,
@@ -75,7 +77,6 @@ export default function App() {
   useEffect(() => {
     const fetchWPData = async () => {
       try {
-        // Dans un environnement navigateur, process.env peut être undefined
         const apiUrl = 'http://somnora.diwo9363.odns.fr/graphql';
         
         const res = await fetch(apiUrl, {
@@ -105,7 +106,6 @@ export default function App() {
             variations: newVariations
           }));
           
-          // Mise à jour de la sélection par défaut avec les données WP
           setSelections(Array(selectedBundle.bundleQty).fill(newVariations[0]));
         }
       } catch (error) {
@@ -186,7 +186,6 @@ export default function App() {
           <div className="lg:col-span-6">
             <h2 className="text-4xl md:text-5xl font-luxury-serif italic mb-12">Adopter Somnora.</h2>
             <div className="space-y-12">
-              {/* BUNDLES */}
               <div className="space-y-4">
                 {productData.bundles.map((b: any) => (
                   <button 
@@ -206,7 +205,6 @@ export default function App() {
                 ))}
               </div>
 
-              {/* VARIATIONS SELECTION */}
               <div className="space-y-6">
                 {selections.map((_, idx) => (
                   <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100 text-center md:text-left">
@@ -243,7 +241,6 @@ export default function App() {
         <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em]">© {new Date().getFullYear()} — Maison de Repos Somnora</p>
       </footer>
 
-      {/* DRAWER PANIER */}
       {isCartOpen && (
         <>
           <div className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[60]" onClick={() => setIsCartOpen(false)}></div>
