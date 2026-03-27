@@ -37,7 +37,7 @@ interface CartItem {
   originalPrice: number;
 }
 
-// Composant Diaporama
+// --- COMPOSANT DIAPORAMA ---
 const Diaporama = ({ variations, activeVariationId, className, innerClassName }: { 
   variations: Variation[], 
   activeVariationId: string, 
@@ -86,6 +86,7 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
   );
 };
 
+// --- INTERFACE PRINCIPALE ---
 export default function ClientInterface({ initialData }: { initialData: any }) {
   const mockProduct = initialData;
   const [selectedBundle, setSelectedBundle] = useState<Bundle>(mockProduct.bundles[1]);
@@ -202,8 +203,9 @@ export default function ClientInterface({ initialData }: { initialData: any }) {
       </div>
     );
   };
-return (
-    <div className="min-h-screen bg-[#FDFCFB] text-stone-900 font-light selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
+
+  return (
+    <div className="min-h-screen bg-[#FDFCFB] text-stone-900 font-light selection:bg-emerald-100 overflow-x-hidden">
       <style>{`
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
         .animate-luxury-float { animation: float 6s ease-in-out infinite; }
@@ -219,6 +221,7 @@ return (
           </div>
           <nav className="hidden lg:flex items-center gap-12 text-sm font-bold uppercase tracking-[0.2em] text-stone-600">
             <button onClick={() => scrollToSection('science')}>La Technologie</button>
+            <button onClick={() => scrollToSection('details')}>Fiche Technique</button>
             <button onClick={() => scrollToSection('achat')}>Commander</button>
           </nav>
           <div className="flex items-center gap-6">
@@ -271,7 +274,9 @@ return (
                 <div className="lg:col-span-6"><img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" className="rounded-[60px] shadow-2xl" alt="" /></div>
               </div>
             </section>
+
             <section id="science" className="bg-stone-50 py-24 md:py-40"><div className="max-w-7xl mx-auto px-6 text-center"><h2 className="text-4xl md:text-6xl font-luxury-serif italic mb-20">Une technologie de pointe.</h2></div></section>
+
             <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
                 <div className="lg:col-span-6 hidden lg:block"><Diaporama variations={mockProduct.variations} activeVariationId={selections[0]?.id} className="aspect-square" innerClassName="rounded-[40px] shadow-xl" /></div>
