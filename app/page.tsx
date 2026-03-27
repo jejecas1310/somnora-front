@@ -88,7 +88,7 @@ export default function App() {
   useEffect(() => {
     const fetchWPData = async () => {
       try {
-        const apiUrl = 'https://somnora.mynexvia.fr/?graphql=1';
+        const apiUrl = 'https://somnora.mynexvia.fr/graphql';
         const res = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
