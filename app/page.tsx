@@ -25,7 +25,8 @@ const INITIAL_MOCK = {
   ]
 };
 
-// --- COMPOSANT DIAPORAMA ---
+// --- COMPOSANTS INTERNES ---
+
 const Diaporama = ({ variations, activeVariationId, className, innerClassName }: any) => {
   const [current, setCurrent] = useState(0);
 
@@ -56,13 +57,14 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
             <span className="text-[10px] font-bold uppercase tracking-widest text-stone-800">{variations[current]?.name}</span>
          </div>
        </div>
-       <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg"><ChevronLeft className="w-4 h-4" /></button>
-       <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg"><ChevronRight className="w-4 h-4" /></button>
+       <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg hover:bg-white"><ChevronLeft className="w-5 h-5" /></button>
+       <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg hover:bg-white"><ChevronRight className="w-5 h-5" /></button>
     </div>
   );
 };
 
 // --- COMPOSANT PRINCIPAL ---
+
 export default function App() {
   const [productData, setProductData] = useState(INITIAL_MOCK);
   const [connectionStatus, setConnectionStatus] = useState<'pending' | 'success' | 'failed'>('pending');
@@ -72,34 +74,25 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<any[]>([]);
 
-  // Initialisation sécurisée
+  // Initialisation des sélections
   useEffect(() => {
     setSelections(Array(INITIAL_MOCK.bundles[1].bundleQty).fill(INITIAL_MOCK.variations[0]));
   }, []);
 
-  // Tentative de connexion WordPress optimisée
+  // Fetch WordPress Data
   useEffect(() => {
     const fetchWPData = async () => {
       try {
-        // Utilisation de l'URL HTTP simple pour éviter les blocages SSL immédiats
         const apiUrl = 'http://somnora.diwo9363.odns.fr/graphql';
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout après 5s
-
         const res = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: `query { products(first: 1) { nodes { name ... on VariableProduct { variations { nodes { id name price image { node { sourceUrl } } } } } } } }`
-          }),
-          signal: controller.signal
+          })
         });
 
-        clearTimeout(timeoutId);
-
         if (!res.ok) throw new Error();
-
         const json = await res.json();
         const wpProduct = json.data?.products?.nodes[0];
 
@@ -157,94 +150,95 @@ export default function App() {
         .font-luxury-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; }
       `}</style>
 
-      {/* HEADER AVEC STATUS DE CONNEXION */}
+      {/* HEADER */}
       <header className={`fixed top-0 w-full z-50 transition-all duration-700 ${scrolled ? 'bg-stone-100/95 backdrop-blur-xl py-4 border-b border-stone-200' : 'bg-transparent py-8'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
             <Circle className="w-6 h-6 text-emerald-900 opacity-60" />
-            <span className="text-xl font-semibold tracking-[0.3em] uppercase">Somnora</span>
+            <span className="text-xl font-semibold tracking-[0.3em] uppercase hidden sm:block">Somnora</span>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* BADGE DE STATUS DYNAMIQUE */}
             <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border transition-colors ${
               connectionStatus === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 
               connectionStatus === 'failed' ? 'bg-orange-50 border-orange-200 text-orange-700' : 
               'bg-stone-50 border-stone-200 text-stone-400'
             }`}>
               {connectionStatus === 'success' ? <><Wifi className="w-3 h-3" /> Live o2switch</> : 
-               connectionStatus === 'failed' ? <><AlertTriangle className="w-3 h-3" /> Mode Secours (SSL/Bitdefender)</> : 
+               connectionStatus === 'failed' ? <><AlertTriangle className="w-3 h-3" /> Mode Secours (SSL)</> : 
                'Connexion...'}
             </div>
             
             <button onClick={() => setIsCartOpen(true)} className="relative p-2">
               <ShoppingCart className="w-6 h-6 text-stone-800" strokeWidth={1.2} />
-              {cart.length > 0 && <span className="absolute top-1 right-0 bg-stone-950 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">{cart.length}</span>}
+              {cart.length > 0 && <span className="absolute top-1 right-0 bg-stone-950 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold shadow-lg">{cart.length}</span>}
             </button>
           </div>
         </div>
       </header>
 
-      {/* HERO SECTION */}
-      <section className="relative min-h-screen flex items-center px-6 max-w-7xl mx-auto pt-24 text-center lg:text-left">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 w-full items-center">
-          <div className="lg:col-span-6 z-10">
-            <h1 className="text-6xl md:text-8xl font-luxury-serif italic mb-10 leading-[0.95] tracking-tighter animate-luxury-float text-stone-950">
-              La science <span className="not-italic block lg:inline">Du Calme.</span>
-            </h1>
-            <p className="text-lg text-stone-700 mb-12 italic max-w-md mx-auto lg:mx-0">{productData.shortDesc}</p>
-            <button onClick={() => document.getElementById('achat')?.scrollIntoView({behavior: 'smooth'})} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-lg hover:bg-emerald-950 transition-colors">Découvrir l'offre</button>
-          </div>
-          <div className="lg:col-span-6 relative">
-            <div className="rounded-[60px] overflow-hidden aspect-[4/5] shadow-2xl border border-stone-100">
-               <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" alt="Somnora Atmosphere" className="w-full h-full object-cover" />
+      <main>
+        {/* HERO */}
+        <section className="relative min-h-screen flex items-center px-6 max-w-7xl mx-auto pt-24 text-center lg:text-left">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 w-full items-center">
+            <div className="lg:col-span-6 z-10">
+              <h1 className="text-6xl md:text-8xl font-luxury-serif italic mb-10 leading-[0.95] tracking-tighter animate-luxury-float text-stone-950">
+                La science <span className="not-italic block lg:inline">Du Calme.</span>
+              </h1>
+              <p className="text-lg text-stone-700 mb-12 italic max-w-md mx-auto lg:mx-0">{productData.shortDesc}</p>
+              <button onClick={() => document.getElementById('achat')?.scrollIntoView({behavior: 'smooth'})} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-950 transition-colors">Découvrir l'offre</button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION ACHAT */}
-      <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto scroll-mt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          <div className="lg:col-span-6 hidden lg:block">
-            <div className="sticky top-40 bg-white p-8 rounded-[60px] shadow-xl border border-stone-200 aspect-square flex items-center justify-center">
-               <Diaporama variations={productData.variations} activeVariationId={selections[0]?.id} className="w-full h-full" innerClassName="rounded-[40px]" />
-            </div>
-          </div>
-          <div className="lg:col-span-6">
-            <h2 className="text-4xl md:text-5xl font-luxury-serif italic mb-12">Adopter Somnora.</h2>
-            <div className="space-y-12">
-              <div className="space-y-4">
-                {productData.bundles.map((b: any) => (
-                  <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white hover:border-stone-200'}`}>
-                    <div className="text-left"><p className="font-bold uppercase tracking-widest text-sm">{b.label}</p><p className="text-xs text-stone-400 italic">{b.bundleQty} unité(s)</p></div>
-                    <p className="text-lg font-bold">{b.price.toFixed(2)} €</p>
-                  </button>
-                ))}
+            <div className="lg:col-span-6">
+              <div className="rounded-[60px] overflow-hidden aspect-[4/5] shadow-2xl border border-stone-100">
+                <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" alt="Somnora Atmosphere" className="w-full h-full object-cover" />
               </div>
+            </div>
+          </div>
+        </section>
 
-              <div className="space-y-6">
-                {selections.length > 0 && selections.map((_, idx) => (
-                  <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100 text-center md:text-left">
-                    <p className="text-[10px] font-bold uppercase mb-4 opacity-40 tracking-widest italic">Modèle n°{idx+1}</p>
-                    <div className="flex gap-4 justify-center md:justify-start">
-                      {productData.variations.map((v: any) => (
-                        <button key={v.id} onClick={() => { const s = [...selections]; s[idx] = v; setSelections(s); }} className={`w-14 h-14 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40 hover:opacity-100'}`}>
-                          <img src={v.image} className="w-full h-full rounded-full object-cover" alt={v.name} />
-                        </button>
-                      ))}
+        {/* ACHAT */}
+        <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto scroll-mt-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            <div className="lg:col-span-6 hidden lg:block">
+              <div className="sticky top-40 bg-white p-8 rounded-[60px] shadow-xl border border-stone-200 aspect-square flex items-center justify-center">
+                <Diaporama variations={productData.variations} activeVariationId={selections[0]?.id} className="w-full h-full" innerClassName="rounded-[40px]" />
+              </div>
+            </div>
+            <div className="lg:col-span-6">
+              <h2 className="text-4xl md:text-5xl font-luxury-serif italic mb-12 text-stone-950">Adopter Somnora.</h2>
+              <div className="space-y-12">
+                <div className="space-y-4">
+                  {productData.bundles.map((b: any) => (
+                    <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white hover:border-stone-200 shadow-sm'}`}>
+                      <div className="text-left"><p className="font-bold uppercase tracking-widest text-sm">{b.label}</p><p className="text-xs text-stone-400 italic">{b.bundleQty} unité(s)</p></div>
+                      <p className="text-lg font-bold">{b.price.toFixed(2)} €</p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-6">
+                  {selections.length > 0 && selections.map((_, idx) => (
+                    <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100 text-center md:text-left">
+                      <p className="text-[10px] font-bold uppercase mb-4 opacity-40 tracking-widest italic">Modèle n°{idx+1}</p>
+                      <div className="flex gap-4 justify-center md:justify-start">
+                        {productData.variations.map((v: any) => (
+                          <button key={v.id} onClick={() => { const s = [...selections]; s[idx] = v; setSelections(s); }} className={`w-14 h-14 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40 hover:opacity-100'}`}>
+                            <img src={v.image} className="w-full h-full rounded-full object-cover" alt={v.name} />
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 shadow-xl active:scale-95 transition-all">
-                Ajouter au panier
-              </button>
+                <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 shadow-2xl active:scale-95 transition-all">
+                  Ajouter au panier
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <footer className="bg-stone-950 text-white py-24 px-10 text-center border-t border-white/5">
         <span className="text-3xl font-medium tracking-[0.5em] uppercase block mb-8">Somnora</span>
@@ -256,7 +250,7 @@ export default function App() {
         <>
           <div className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[60]" onClick={() => setIsCartOpen(false)}></div>
           <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[70] p-8 shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
-            <div className="flex justify-between items-center mb-8"><h2 className="font-bold uppercase text-xs tracking-widest">Votre Panier</h2><button onClick={() => setIsCartOpen(false)}><X className="w-6 h-6 text-stone-400" /></button></div>
+            <div className="flex justify-between items-center mb-8"><h2 className="font-bold uppercase text-xs tracking-widest text-stone-950">Votre Panier</h2><button onClick={() => setIsCartOpen(false)}><X className="w-6 h-6 text-stone-400" /></button></div>
             <div className="flex-1 overflow-y-auto space-y-6">
               {cart.map((item, i) => (
                 <div key={i} className="flex gap-4 items-center animate-in fade-in slide-in-from-bottom-2">
@@ -269,7 +263,7 @@ export default function App() {
             {cart.length > 0 && (
               <div className="pt-8 border-t border-stone-100">
                 <div className="flex justify-between mb-8 text-xl font-light"><span>Total</span><span>{cart.reduce((t, i) => t + i.price, 0).toFixed(2)} €</span></div>
-                <button className="w-full bg-stone-950 text-white py-6 rounded-full font-bold uppercase text-[10px] tracking-widest shadow-lg">Commander</button>
+                <button className="w-full bg-stone-950 text-white py-6 rounded-full font-bold uppercase text-[10px] tracking-widest shadow-lg">Passer la commande</button>
               </div>
             )}
           </div>
