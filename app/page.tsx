@@ -37,15 +37,12 @@ interface CartItem {
   originalPrice: number;
 }
 
-// Données temporaires (en attendant la liaison o2switch)
-const mockProduct = {
+// --- DONNÉES DE SECOURS (Affichées instantanément) ---
+const INITIAL_MOCK = {
   name: "Le Compagnon Respirant Somnora",
   tagline: "Synchronisation haptique et sensorielle.",
   shortDesc: "Un système intuitif conçu pour réguler votre respiration par mimétisme. Capteurs intégrés, cycles lumineux et ambiances sonores naturelles.",
   basePrice: 39.90,
-  priceStr: "39,90 €",
-  dimensions: "30 x 20 x 15 cm",
-  material: "Coton PP",
   variations: [
     { id: "var-1", name: "Série Koala Gris", image: "https://images.unsplash.com/photo-1531885559864-42b7816bb315?auto=format&fit=crop&q=80&w=1000", value: "Koala Gris" },
     { id: "var-2", name: "Série Koala Marron", image: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&q=80&w=1000", value: "Koala Marron" },
@@ -59,7 +56,7 @@ const mockProduct = {
   ] as Bundle[]
 };
 
-// Composant Diaporama
+// --- COMPOSANT DIAPORAMA ---
 const Diaporama = ({ variations, activeVariationId, className, innerClassName }: { 
   variations: Variation[], 
   activeVariationId: string, 
@@ -90,7 +87,7 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
             />
          ))}
          <div className="absolute top-6 left-6 z-20 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-800">{variations[current].name}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-800">{variations[current]?.name}</span>
          </div>
        </div>
        <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg hover:bg-white hover:scale-105 active:scale-95">
@@ -109,13 +106,53 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
 };
 
 export default function App() {
-  const [selectedBundle, setSelectedBundle] = useState<Bundle>(mockProduct.bundles[1]);
-  const [selections, setSelections] = useState<Variation[]>([mockProduct.variations[0], mockProduct.variations[0]]);
+  const [productData, setProductData] = useState(INITIAL_MOCK);
+  const [selectedBundle, setSelectedBundle] = useState<Bundle>(INITIAL_MOCK.bundles[1]);
+  const [selections, setSelections] = useState<Variation[]>([INITIAL_MOCK.variations[0], INITIAL_MOCK.variations[0]]);
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activePage, setActivePage] = useState('home');
+
+  // --- RÉCUPÉRATION DES DONNÉES WORDPRESS ---
+  useEffect(() => {
+    const fetchWPData = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://somnora.diwo9363.odns.fr/graphql';
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `query { products(first: 1) { nodes { name ... on VariableProduct { variations { nodes { id name price image { node { sourceUrl } } } } } } } }`
+          })
+        });
+        const json = await res.json();
+        const wpProduct = json.data?.products?.nodes[0];
+        
+        if (wpProduct && wpProduct.variations) {
+          const newVariations = wpProduct.variations.nodes.map((v: any) => ({
+            id: v.id,
+            name: v.name.split(' - ')[1] || v.name,
+            image: v.image?.node?.sourceUrl || INITIAL_MOCK.variations[0].image,
+            value: v.name.split(' - ')[1] || v.name,
+          }));
+          
+          setProductData(prev => ({
+            ...prev,
+            name: wpProduct.name,
+            variations: newVariations
+          }));
+          // Optionnel : Mettre à jour les sélections actuelles avec les nouvelles images
+          setSelections(prev => prev.map((_, i) => newVariations[i % newVariations.length]));
+        }
+      } catch (err) {
+        console.warn("Connexion WordPress échouée, conservation des données locales.");
+      }
+    };
+
+    fetchWPData();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -124,7 +161,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = (isMenuOpen || isCartOpen) ? 'hidden' : 'unset';
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = (isMenuOpen || isCartOpen) ? 'hidden' : 'unset';
+    }
   }, [isMenuOpen, isCartOpen]);
 
   const scrollToSection = (id: string) => {
@@ -133,16 +172,12 @@ export default function App() {
       setActivePage('home');
       setTimeout(() => {
         const element = document.getElementById(id);
-        if (element) {
-          window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 100, behavior: 'smooth' });
-        }
+        if (element) window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 100, behavior: 'smooth' });
       }, 100);
       return;
     }
     const element = document.getElementById(id);
-    if (element) {
-      window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 100, behavior: 'smooth' });
-    }
+    if (element) window.scrollTo({ top: element.getBoundingClientRect().top + window.pageYOffset - 100, behavior: 'smooth' });
   };
 
   const handleBundleChange = (bundle: Bundle) => {
@@ -150,7 +185,7 @@ export default function App() {
     setSelections(prev => {
       const newSelections = [...prev];
       if (bundle.bundleQty > prev.length) {
-        for(let i = prev.length; i < bundle.bundleQty; i++) newSelections.push(mockProduct.variations[0]);
+        for(let i = prev.length; i < bundle.bundleQty; i++) newSelections.push(productData.variations[0]);
       } else {
         newSelections.length = bundle.bundleQty;
       }
@@ -167,82 +202,49 @@ export default function App() {
   };
 
   const handleAddToCart = () => {
-    const variantDesc = selections.map(s => s.value).join(' + ');
-    const existingIndex = cart.findIndex(item => item.bundleId === selectedBundle.id && item.variantName === variantDesc);
-
-    if (existingIndex >= 0) {
-      const newCart = [...cart];
-      newCart[existingIndex].qty += 1;
-      setCart(newCart);
-    } else {
-      setCart([...cart, {
-        cartId: `${selectedBundle.id}-${Date.now()}`,
-        bundleId: selectedBundle.id,
-        name: mockProduct.name,
-        variantName: variantDesc,
-        image: selections[0].image,
-        bundleLabel: selectedBundle.label,
-        qty: 1,
-        price: selectedBundle.price,
-        originalPrice: mockProduct.basePrice * selectedBundle.bundleQty
-      }]);
-    }
+    const variantDesc = selections.map(s => s.name).join(' + ');
+    setCart([...cart, {
+      cartId: `${selectedBundle.id}-${Date.now()}`,
+      bundleId: selectedBundle.id,
+      name: productData.name,
+      variantName: variantDesc,
+      image: selections[0].image,
+      bundleLabel: selectedBundle.label,
+      qty: 1,
+      price: selectedBundle.price,
+      originalPrice: productData.basePrice * selectedBundle.bundleQty
+    }]);
     setIsCartOpen(true);
   };
 
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.qty), 0);
-  const cartSavings = cart.reduce((total, item) => total + ((item.originalPrice - item.price) * item.qty), 0);
 
   const renderLegalContent = () => {
-    const content: Record<string, { title: string, sections: { t: string, c: string }[] }> = {
-      privacy: {
-        title: "Politique de Confidentialité (RGPD)",
-        sections: [
-          { t: "1. Collecte des données", c: "Nous collectons les données strictement nécessaires au traitement de vos commandes." },
-          { t: "2. Utilisation et Partage", c: "Vos données sont utilisées exclusivement pour l'expédition et ne sont jamais revendues." }
-        ]
-      },
-      cgv: {
-        title: "Conditions Générales de Vente",
-        sections: [
-          { t: "1. Objet et Prix", c: "Les prix sont indiqués en Euros TTC. La livraison est offerte." },
-          { t: "2. Garantie 30 Nuits", c: "Si vous n'êtes pas satisfait, nous vous remboursons intégralement." }
-        ]
-      },
-      legal: {
-        title: "Mentions Légales",
-        sections: [
-          { t: "1. Éditeur du site", c: "Le site Somnora est édité par Somnora. Email : contact@somnora.fr" },
-          { t: "2. Hébergement", c: "Ce site est hébergé par o2switch à Clermont-Ferrand." }
-        ]
-      }
+    const content: any = {
+      privacy: { title: "Confidentialité", sections: [{ t: "Données", c: "Utilisées pour la livraison." }] },
+      cgv: { title: "CGV", sections: [{ t: "Retours", c: "30 nuits d'essai." }] },
+      legal: { title: "Mentions Légales", sections: [{ t: "Éditeur", c: "Somnora France." }] }
     };
-
     const p = content[activePage];
-    if (!p) return null;
-
-    return (
-      <div className="max-w-3xl mx-auto space-y-8 text-stone-700 animate-in fade-in duration-700">
-        <h1 className="text-4xl md:text-5xl font-luxury-serif italic text-stone-950 mb-12">{p.title}</h1>
-        {p.sections.map((s, i) => (
-          <section key={i} className="space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-stone-900">{s.t}</h2>
-            <p className="leading-relaxed">{s.c}</p>
-          </section>
+    return p ? (
+      <div className="max-w-3xl mx-auto py-20 px-6 animate-in fade-in duration-700 text-stone-700">
+        <h1 className="text-4xl font-luxury-serif italic mb-12 text-stone-950">{p.title}</h1>
+        {p.sections.map((s: any, i: number) => (
+          <div key={i} className="mb-8"><h2 className="font-bold uppercase text-xs mb-2">{s.t}</h2><p>{s.c}</p></div>
         ))}
       </div>
-    );
+    ) : null;
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] text-stone-900 font-light selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FDFCFB] text-stone-900 font-light selection:bg-emerald-100 overflow-x-hidden">
       <style>{`
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
         .animate-luxury-float { animation: float 6s ease-in-out infinite; }
         .font-luxury-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; }
       `}</style>
 
-      {/* HEADER */}
+      {/* HEADER COMPLET */}
       <header className={`fixed top-0 w-full z-50 transition-all duration-700 ${scrolled ? 'bg-stone-100/95 backdrop-blur-xl py-4 border-b border-stone-200 shadow-sm' : 'bg-transparent py-8'}`}>
         <div className="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => { setActivePage('home'); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
@@ -257,7 +259,7 @@ export default function App() {
           <div className="flex items-center gap-6">
             <button onClick={() => setIsCartOpen(true)} className="relative p-2">
               <ShoppingCart className="w-6 h-6 text-stone-800" strokeWidth={1.2} />
-              {cart.length > 0 && <span className="absolute top-1 right-0 bg-stone-950 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold shadow-sm">{cart.reduce((t, i) => t + i.qty, 0)}</span>}
+              {cart.length > 0 && <span className="absolute top-1 right-0 bg-stone-950 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold shadow-sm">{cart.length}</span>}
             </button>
             <button onClick={() => setIsMenuOpen(true)} className="lg:hidden p-2"><Menu className="w-7 h-7" /></button>
           </div>
@@ -273,12 +275,12 @@ export default function App() {
         </div>
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
           {cart.length === 0 ? <p className="text-center italic opacity-40 py-20 font-luxury-serif">Le panier est vide</p> : cart.map((item) => (
-            <div key={item.cartId} className="flex gap-4">
+            <div key={item.cartId} className="flex gap-4 items-center">
               <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt="" />
               <div className="flex-1">
                 <p className="text-xs font-bold uppercase">{item.bundleLabel}</p>
-                <p className="text-[10px] text-stone-400">{item.variantName}</p>
-                <p className="text-sm font-bold mt-2">{(item.price * item.qty).toFixed(2)} €</p>
+                <p className="text-[10px] text-stone-400 uppercase">{item.variantName}</p>
+                <p className="text-sm font-bold mt-2">{item.price.toFixed(2)} €</p>
               </div>
             </div>
           ))}
@@ -301,12 +303,8 @@ export default function App() {
                   <h1 className="text-6xl md:text-8xl font-luxury-serif italic mb-10 leading-[0.95] tracking-tighter animate-luxury-float text-stone-950">
                     La science <span className="not-italic block lg:inline">Du Calme.</span>
                   </h1>
-                  <p className="text-lg text-stone-700 mb-12 leading-relaxed max-w-md italic mx-auto lg:mx-0">
-                    {mockProduct.shortDesc}
-                  </p>
-                  <button onClick={() => scrollToSection('achat')} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-950 transition-all">
-                    Découvrir l'offre
-                  </button>
+                  <p className="text-lg text-stone-700 mb-12 leading-relaxed max-w-md italic mx-auto lg:mx-0">{productData.shortDesc}</p>
+                  <button onClick={() => scrollToSection('achat')} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-950 transition-all">Découvrir l'offre</button>
                 </div>
                 <div className="lg:col-span-6 relative">
                   <div className="rounded-[60px] overflow-hidden aspect-[4/5] shadow-2xl border border-stone-200">
@@ -317,27 +315,13 @@ export default function App() {
             </section>
 
             {/* SCIENCE */}
-            <section id="science" className="bg-stone-50 py-24 md:py-40 text-center">
+            <section id="science" className="bg-stone-50 py-24 md:py-40 text-center scroll-mt-20">
               <div className="max-w-7xl mx-auto px-6">
-                <h2 className="text-4xl md:text-6xl font-luxury-serif italic mb-10">Une technologie de pointe.</h2>
-                <p className="text-sm uppercase tracking-widest text-stone-400 font-bold mb-20">Régulation sensorielle par mimétisme.</p>
+                <h2 className="text-4xl md:text-6xl font-luxury-serif italic mb-20">Une technologie de pointe.</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                   {/* Points forts */}
-                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100">
-                      <Wind className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} />
-                      <h3 className="font-bold uppercase tracking-widest mb-4">Rythme Naturel</h3>
-                      <p className="text-sm text-stone-600">Le système simule une respiration apaisante pour induire le sommeil.</p>
-                   </div>
-                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100">
-                      <Music className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} />
-                      <h3 className="font-bold uppercase tracking-widest mb-4">Sons Apaisants</h3>
-                      <p className="text-sm text-stone-600">Bruits blancs et ambiances sonores naturelles intégrées.</p>
-                   </div>
-                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100">
-                      <Sun className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} />
-                      <h3 className="font-bold uppercase tracking-widest mb-4">Lumière Douce</h3>
-                      <p className="text-sm text-stone-600">Cycles lumineux synchronisés pour réduire l'anxiété nocturne.</p>
-                   </div>
+                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100"><Wind className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} /><h3 className="font-bold uppercase tracking-widest mb-4 italic">Rythme Naturel</h3><p className="text-sm text-stone-600">Le système simule une respiration apaisante pour induire le sommeil.</p></div>
+                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100"><Music className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} /><h3 className="font-bold uppercase tracking-widest mb-4 italic">Sons Apaisants</h3><p className="text-sm text-stone-600">Bruits blancs et ambiances sonores naturelles intégrées.</p></div>
+                   <div className="bg-white p-10 rounded-[40px] shadow-sm border border-stone-100"><Sun className="w-10 h-10 text-emerald-800 mx-auto mb-6" strokeWidth={1.2} /><h3 className="font-bold uppercase tracking-widest mb-4 italic">Lumière Douce</h3><p className="text-sm text-stone-600">Cycles lumineux synchronisés pour réduire l'anxiété nocturne.</p></div>
                 </div>
               </div>
             </section>
@@ -347,41 +331,36 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24">
                 <div className="lg:col-span-6 hidden lg:block">
                   <div className="sticky top-40 bg-white p-8 rounded-[60px] shadow-xl border border-stone-200 aspect-square">
-                    <Diaporama variations={mockProduct.variations} activeVariationId={selections[0]?.id} className="w-full h-full" innerClassName="rounded-[40px]" />
+                    <Diaporama variations={productData.variations} activeVariationId={selections[0]?.id} className="w-full h-full" innerClassName="rounded-[40px]" />
                   </div>
                 </div>
                 <div className="lg:col-span-6">
                   <h2 className="text-4xl md:text-5xl font-luxury-serif italic mb-12">Adopter Somnora.</h2>
                   <div className="space-y-16">
-                    {/* Packs */}
                     <div>
-                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 mb-8 border-b border-stone-100 pb-2">1. Choisissez votre offre</h4>
+                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 mb-8 border-b border-stone-100 pb-2 italic">1. Choisissez votre offre</h4>
                       <div className="space-y-4">
-                        {mockProduct.bundles.map(b => (
-                          <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white'}`}>
-                            <div className="text-left">
-                              <p className="font-bold uppercase tracking-widest text-sm">{b.label}</p>
-                              <p className="text-xs text-stone-400">{b.bundleQty} unité(s) Somnora</p>
-                            </div>
+                        {productData.bundles.map(b => (
+                          <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20 shadow-sm' : 'border-stone-100 bg-white'}`}>
+                            <div className="text-left"><p className="font-bold uppercase tracking-widest text-sm">{b.label}</p><p className="text-xs text-stone-400 italic">{b.bundleQty} unité(s)</p></div>
                             <p className="text-lg font-bold">{b.price.toFixed(2)} €</p>
                           </button>
                         ))}
                       </div>
                     </div>
-                    {/* Personnalisation */}
                     <div>
-                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 mb-8 border-b border-stone-100 pb-2">2. Personnalisez vos modèles</h4>
+                      <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400 mb-8 border-b border-stone-100 pb-2 italic">2. Personnalisez vos modèles</h4>
                       <div className="space-y-6">
                         {selections.map((_, idx) => (
                           <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100">
-                            <p className="text-[10px] font-bold uppercase mb-6 opacity-40 tracking-widest">Compagnon n°{idx+1}</p>
+                            <p className="text-[10px] font-bold uppercase mb-6 opacity-40 tracking-widest italic">Compagnon n°{idx+1}</p>
                             <div className="flex gap-4 md:gap-8 justify-center md:justify-start">
-                              {mockProduct.variations.map(v => (
+                              {productData.variations.map(v => (
                                 <button key={v.id} onClick={() => handleSelectionChange(idx, v)} className="flex flex-col items-center gap-3">
                                   <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40'}`}>
                                     <img src={v.image} className="w-full h-full rounded-full object-cover" alt="" />
                                   </div>
-                                  <span className={`text-[9px] font-bold uppercase tracking-tighter ${selections[idx]?.id === v.id ? 'text-stone-900' : 'text-stone-400'}`}>{v.value}</span>
+                                  <span className={`text-[9px] font-bold uppercase tracking-tighter italic ${selections[idx]?.id === v.id ? 'text-stone-900' : 'text-stone-400'}`}>{v.name}</span>
                                 </button>
                               ))}
                             </div>
@@ -389,18 +368,9 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    {/* CTA Final */}
                     <div className="pt-10 border-t border-stone-200">
-                      <div className="flex justify-between items-center mb-8">
-                        <span className="text-4xl font-light">{selectedBundle.price.toFixed(2)} €</span>
-                        <div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-4 py-2 rounded-full uppercase tracking-widest">Livraison Gratuite</div>
-                      </div>
-                      <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 transition-all shadow-xl active:scale-95">
-                        Ajouter au panier
-                      </button>
-                      <p className="mt-8 text-center text-[10px] font-bold uppercase tracking-widest opacity-40 flex items-center justify-center gap-2">
-                        <ShieldCheck className="w-4 h-4" /> Garantie Satisfait 30 Jours
-                      </p>
+                      <div className="flex justify-between items-center mb-8"><span className="text-4xl font-light">{selectedBundle.price.toFixed(2)} €</span><div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-4 py-2 rounded-full uppercase tracking-widest">Livraison Gratuite</div></div>
+                      <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 transition-all shadow-xl active:scale-95">Ajouter au panier</button>
                     </div>
                   </div>
                 </div>
@@ -412,7 +382,6 @@ export default function App() {
         )}
       </main>
 
-      {/* FOOTER */}
       <footer className="bg-stone-950 text-white py-24 px-10 text-center">
         <div className="max-w-7xl mx-auto flex flex-col items-center gap-16">
           <span className="text-3xl font-medium tracking-[0.5em] uppercase">Somnora</span>
@@ -421,9 +390,7 @@ export default function App() {
             <button onClick={() => setActivePage('cgv')} className="hover:text-white transition-colors">CGV & Retours</button>
             <button onClick={() => setActivePage('privacy')} className="hover:text-white transition-colors">Confidentialité</button>
           </div>
-          <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em] pt-10 border-t border-white/5 w-full">
-            Somnora Maison de Repos — {new Date().getFullYear()} — L'Art du Sommeil
-          </p>
+          <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em] pt-10 border-t border-white/5 w-full">Somnora Maison de Repos — {new Date().getFullYear()} — L'Art du Sommeil</p>
         </div>
       </footer>
     </div>
