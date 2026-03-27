@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Wind, Volume2, Star, ArrowRight, Sun, Music,
   Menu, ShoppingCart, Circle, X, Trash2, Plus, Minus,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Wifi, WifiOff
 } from 'lucide-react';
 
 // --- DONNÉES DE SECOURS ---
@@ -30,11 +30,13 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    if (activeVariationId) {
+    if (activeVariationId && variations) {
       const index = variations.findIndex((v: any) => v.id === activeVariationId);
       if (index !== -1) setCurrent(index);
     }
   }, [activeVariationId, variations]);
+
+  if (!variations || variations.length === 0) return null;
 
   const prev = () => setCurrent(curr => (curr === 0 ? variations.length - 1 : curr - 1));
   const next = () => setCurrent(curr => (curr + 1) % variations.length);
@@ -54,12 +56,8 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
             <span className="text-[10px] font-bold uppercase tracking-widest text-stone-800">{variations[current]?.name}</span>
          </div>
        </div>
-       <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg hover:bg-white hover:scale-105 active:scale-95">
-         <ChevronLeft className="w-5 h-5" />
-       </button>
-       <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg hover:bg-white hover:scale-105 active:scale-95">
-         <ChevronRight className="w-5 h-5" />
-       </button>
+       <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg"><ChevronLeft className="w-4 h-4" /></button>
+       <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-stone-800 opacity-0 group-hover:opacity-100 transition-all z-20 shadow-lg"><ChevronRight className="w-4 h-4" /></button>
     </div>
   );
 };
@@ -67,18 +65,23 @@ const Diaporama = ({ variations, activeVariationId, className, innerClassName }:
 // --- COMPOSANT PRINCIPAL ---
 export default function App() {
   const [productData, setProductData] = useState(INITIAL_MOCK);
+  const [connectionStatus, setConnectionStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [selectedBundle, setSelectedBundle] = useState(INITIAL_MOCK.bundles[1]);
-  const [selections, setSelections] = useState(Array(INITIAL_MOCK.bundles[1].bundleQty).fill(INITIAL_MOCK.variations[0]));
+  const [selections, setSelections] = useState<any[]>([]);
   const [scrolled, setScrolled] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<any[]>([]);
 
-  // Chargement des données au montage du composant
+  // Initialisation des sélections au démarrage
+  useEffect(() => {
+    setSelections(Array(selectedBundle.bundleQty).fill(INITIAL_MOCK.variations[0]));
+  }, []);
+
+  // Tentative de connexion WordPress
   useEffect(() => {
     const fetchWPData = async () => {
       try {
         const apiUrl = 'http://somnora.diwo9363.odns.fr/graphql';
-        
         const res = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -87,7 +90,7 @@ export default function App() {
           })
         });
 
-        if (!res.ok) throw new Error('Erreur réseau');
+        if (!res.ok) throw new Error();
 
         const json = await res.json();
         const wpProduct = json.data?.products?.nodes[0];
@@ -100,16 +103,14 @@ export default function App() {
             value: v.name.split(' - ')[1] || v.name,
           }));
 
-          setProductData(prev => ({
-            ...prev,
-            name: wpProduct.name,
-            variations: newVariations
-          }));
-          
+          setProductData(prev => ({ ...prev, name: wpProduct.name, variations: newVariations }));
           setSelections(Array(selectedBundle.bundleQty).fill(newVariations[0]));
+          setConnectionStatus('success');
+        } else {
+          setConnectionStatus('failed');
         }
       } catch (error) {
-        console.warn("Utilisation des données de secours (Antivirus ou Certificat bloquant).");
+        setConnectionStatus('failed');
       }
     };
 
@@ -122,14 +123,19 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleBundleChange = (bundle: any) => {
+    setSelectedBundle(bundle);
+    setSelections(Array(bundle.bundleQty).fill(productData.variations[0]));
+  };
+
   const handleAddToCart = () => {
-    const variantDesc = selections.map((s: any) => s.name).join(' + ');
+    const variantDesc = selections.map((s: any) => s?.name || "Modèle").join(' + ');
     setCart([...cart, {
       cartId: Date.now().toString(),
       name: productData.name,
       variantName: variantDesc,
       price: selectedBundle.price,
-      image: selections[0].image,
+      image: selections[0]?.image || "",
       qty: 1
     }]);
     setIsCartOpen(true);
@@ -143,14 +149,20 @@ export default function App() {
         .font-luxury-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; }
       `}</style>
 
-      {/* HEADER */}
-      <header className={`fixed top-0 w-full z-50 transition-all duration-700 ${scrolled ? 'bg-stone-100/95 backdrop-blur-xl py-4 border-b border-stone-200 shadow-sm' : 'bg-transparent py-8'}`}>
+      {/* HEADER AVEC STATUS */}
+      <header className={`fixed top-0 w-full z-50 transition-all duration-700 ${scrolled ? 'bg-stone-100/95 backdrop-blur-xl py-4 border-b border-stone-200' : 'bg-transparent py-8'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
             <Circle className="w-6 h-6 text-emerald-900 opacity-60" />
             <span className="text-xl font-semibold tracking-[0.3em] uppercase">Somnora</span>
           </div>
-          <div className="flex items-center gap-6">
+
+          <div className="flex items-center gap-4">
+            {/* BADGE DE CONNEXION POUR SORTIR DE LA BOUCLE */}
+            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${connectionStatus === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : connectionStatus === 'failed' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-stone-50 border-stone-200 text-stone-400'}`}>
+              {connectionStatus === 'success' ? <><Wifi className="w-3 h-3" /> Connecté à o2switch</> : connectionStatus === 'failed' ? <><WifiOff className="w-3 h-3" /> Mode Secours (Bitdefender/SSL)</> : 'Vérification...'}
+            </div>
+            
             <button onClick={() => setIsCartOpen(true)} className="relative p-2">
               <ShoppingCart className="w-6 h-6 text-stone-800" strokeWidth={1.2} />
               {cart.length > 0 && <span className="absolute top-1 right-0 bg-stone-950 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-bold">{cart.length}</span>}
@@ -159,7 +171,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* HERO SECTION */}
+      {/* HERO */}
       <section className="relative min-h-screen flex items-center px-6 max-w-7xl mx-auto pt-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 w-full items-center">
           <div className="lg:col-span-6 text-center lg:text-left">
@@ -170,12 +182,12 @@ export default function App() {
             <button onClick={() => document.getElementById('achat')?.scrollIntoView({behavior: 'smooth'})} className="bg-stone-950 text-white px-14 py-6 rounded-full text-xs font-bold uppercase tracking-[0.2em] shadow-lg">Découvrir l'offre</button>
           </div>
           <div className="lg:col-span-6">
-            <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" className="rounded-[60px] shadow-2xl border border-stone-100" alt="Somnora Atmosphere" />
+            <img src="https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&q=80&w=1200" className="rounded-[60px] shadow-2xl border border-stone-100" alt="" />
           </div>
         </div>
       </section>
 
-      {/* ACHAT SECTION */}
+      {/* ACHAT */}
       <section id="achat" className="py-24 md:py-40 px-6 max-w-7xl mx-auto scroll-mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <div className="lg:col-span-6 hidden lg:block">
@@ -188,39 +200,21 @@ export default function App() {
             <div className="space-y-12">
               <div className="space-y-4">
                 {productData.bundles.map((b: any) => (
-                  <button 
-                    key={b.id} 
-                    onClick={() => { 
-                      setSelectedBundle(b); 
-                      setSelections(Array(b.bundleQty).fill(productData.variations[0])); 
-                    }} 
-                    className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white hover:border-stone-200'}`}
-                  >
-                    <div className="text-left">
-                      <p className="font-bold uppercase tracking-widest text-sm">{b.label}</p>
-                      <p className="text-xs text-stone-400 italic">{b.bundleQty} unité(s)</p>
-                    </div>
+                  <button key={b.id} onClick={() => handleBundleChange(b)} className={`w-full p-6 rounded-3xl border-2 transition-all flex justify-between items-center ${selectedBundle.id === b.id ? 'border-emerald-800 bg-emerald-50/20' : 'border-stone-100 bg-white hover:border-stone-200'}`}>
+                    <div className="text-left"><p className="font-bold uppercase tracking-widest text-sm">{b.label}</p><p className="text-xs text-stone-400 italic">{b.bundleQty} unité(s)</p></div>
                     <p className="text-lg font-bold">{b.price.toFixed(2)} €</p>
                   </button>
                 ))}
               </div>
 
               <div className="space-y-6">
-                {selections.map((_, idx) => (
+                {selections.length > 0 && selections.map((_, idx) => (
                   <div key={idx} className="bg-stone-50 p-6 rounded-3xl border border-stone-100 text-center md:text-left">
                     <p className="text-[10px] font-bold uppercase mb-4 opacity-40 tracking-widest italic">Modèle n°{idx+1}</p>
                     <div className="flex gap-4 justify-center md:justify-start">
                       {productData.variations.map((v: any) => (
-                        <button 
-                          key={v.id} 
-                          onClick={() => { 
-                            const s = [...selections]; 
-                            s[idx] = v; 
-                            setSelections(s); 
-                          }} 
-                          className={`w-14 h-14 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40 hover:opacity-100'}`}
-                        >
-                          <img src={v.image} className="w-full h-full rounded-full object-cover" alt={v.name} />
+                        <button key={v.id} onClick={() => { const s = [...selections]; s[idx] = v; setSelections(s); }} className={`w-14 h-14 rounded-full border-2 p-1 transition-all ${selections[idx]?.id === v.id ? 'border-emerald-800 scale-110 shadow-md bg-white' : 'border-transparent opacity-40 hover:opacity-100'}`}>
+                          <img src={v.image} className="w-full h-full rounded-full object-cover" alt="" />
                         </button>
                       ))}
                     </div>
@@ -228,7 +222,7 @@ export default function App() {
                 ))}
               </div>
 
-              <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 transition-all shadow-xl active:scale-[0.98]">
+              <button onClick={handleAddToCart} className="w-full bg-stone-950 text-white py-8 rounded-full font-bold uppercase tracking-[0.3em] hover:bg-emerald-950 shadow-xl active:scale-95">
                 Ajouter au panier
               </button>
             </div>
@@ -241,36 +235,20 @@ export default function App() {
         <p className="text-[9px] text-stone-600 uppercase tracking-[0.4em]">© {new Date().getFullYear()} — Maison de Repos Somnora</p>
       </footer>
 
+      {/* PANIER */}
       {isCartOpen && (
         <>
           <div className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[60]" onClick={() => setIsCartOpen(false)}></div>
           <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[70] p-8 shadow-2xl flex flex-col animate-in slide-in-from-right duration-500">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="font-bold uppercase text-xs tracking-widest">Votre Panier</h2>
-              <button onClick={() => setIsCartOpen(false)}><X className="w-6 h-6" /></button>
-            </div>
+            <div className="flex justify-between items-center mb-8"><h2 className="font-bold uppercase text-xs tracking-widest">Votre Panier</h2><button onClick={() => setIsCartOpen(false)}><X className="w-6 h-6" /></button></div>
             <div className="flex-1 overflow-y-auto space-y-6">
               {cart.map((item, i) => (
-                <div key={i} className="flex gap-4 items-center animate-in fade-in slide-in-from-bottom-2">
+                <div key={i} className="flex gap-4 items-center">
                   <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt="" />
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold uppercase">{item.name}</p>
-                    <p className="text-[9px] text-stone-400 uppercase">{item.variantName}</p>
-                    <p className="font-bold text-sm mt-1">{item.price.toFixed(2)} €</p>
-                  </div>
+                  <div className="flex-1"><p className="text-[10px] font-bold uppercase">{item.name}</p><p className="text-[9px] text-stone-400 uppercase">{item.variantName}</p><p className="font-bold text-sm mt-1">{item.price.toFixed(2)} €</p></div>
                 </div>
               ))}
-              {cart.length === 0 && <p className="text-center italic text-stone-400 py-10">Le panier est vide</p>}
             </div>
-            {cart.length > 0 && (
-              <div className="pt-8 border-t border-stone-100">
-                <div className="flex justify-between mb-8 text-xl font-light">
-                  <span>Total</span>
-                  <span>{cart.reduce((t, i) => t + i.price, 0).toFixed(2)} €</span>
-                </div>
-                <button className="w-full bg-stone-950 text-white py-6 rounded-full font-bold uppercase text-[10px] tracking-widest">Paiement</button>
-              </div>
-            )}
           </div>
         </>
       )}
