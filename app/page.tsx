@@ -21,9 +21,9 @@ const INITIAL_MOCK = {
   material: "Coton PP Haute Qualité & Soft Plush",
   variations: [
     { id: "var-1", name: "Série Koala Gris", image: "/koala.jpg", value: "Koala Gris" },
-    { id: "var-2", name: "Série Koala Marron", image: "/koala2.jpeg", value: "Koala Marron" },
+    { id: "var-2", name: "Série Koala Marron", image: "/koala2.JPG", value: "Koala Marron" },
     { id: "var-3", name: "Série Chien", image: "/chien.jpg", value: "Chien" },
-    { id: "var-4", name: "Série Éléphant", image: "/elephant.jpeg", value: "Éléphant" }
+    { id: "var-4", name: "Série Éléphant", image: "/elephant.JPG", value: "Éléphant" }
   ],
   bundles: [
     { id: "b1", label: "Unité", bundleQty: 1, price: 39.90, popular: false },
