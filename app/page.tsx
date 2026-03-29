@@ -20,10 +20,10 @@ const INITIAL_MOCK = {
   dimensions: "30 x 20 x 15 cm",
   material: "Coton PP Haute Qualité & Soft Plush",
   variations: [
-    { id: "var-1", name: "Série Koala Gris", image: "https://images.unsplash.com/photo-1531885559864-42b7816bb315?auto=format&fit=crop&q=80&w=1000", value: "Koala Gris" },
-    { id: "var-2", name: "Série Koala Marron", image: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&q=80&w=1000", value: "Koala Marron" },
-    { id: "var-3", name: "Série Snoopy", image: "https://images.unsplash.com/photo-1583008985558-4da5ab2fb12d?auto=format&fit=crop&q=80&w=1000", value: "Snoopy" },
-    { id: "var-4", name: "Série Éléphant", image: "https://images.unsplash.com/photo-1551043047-1d2adf00f3fe?auto=format&fit=crop&q=80&w=1000", value: "Éléphant" }
+    { id: "var-1", name: "Série Koala Gris", image: "/koala.jpg", value: "Koala Gris" },
+    { id: "var-2", name: "Série Koala Marron", image: "/koala2.jpg", value: "Koala Marron" },
+    { id: "var-3", name: "Série Chien", image: "/chien.jpg", value: "Chien' },
+    { id: "var-4", name: "Série Éléphant", image: "/elephant.jpg", value: "Éléphant" }
   ],
   bundles: [
     { id: "b1", label: "Unité", bundleQty: 1, price: 39.90, popular: false },
