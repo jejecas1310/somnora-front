@@ -22,7 +22,7 @@ const INITIAL_MOCK = {
   variations: [
     { id: "var-1", name: "Série Koala Gris", image: "/koala.jpg", value: "Koala Gris" },
     { id: "var-2", name: "Série Koala Marron", image: "/koala2.jpg", value: "Koala Marron" },
-    { id: "var-3", name: "Série Chien", image: "/chien.jpg", value: "Chien' },
+    { id: "var-3", name: "Série Chien", image: "/chien.jpg", value: "Chien" },
     { id: "var-4", name: "Série Éléphant", image: "/elephant.jpg", value: "Éléphant" }
   ],
   bundles: [
