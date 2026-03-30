@@ -20,10 +20,10 @@ const INITIAL_MOCK = {
   dimensions: "30 x 20 x 15 cm",
   material: "Coton PP Haute Qualité & Soft Plush",
   variations: [
-    { id: "var-1", name: "Série Koala Gris", image: "/koala.jpg", value: "Koala Gris" },
-    { id: "var-2", name: "Série Koala Marron", image: "/koala2.JPG", value: "Koala Marron" },
-    { id: "var-3", name: "Série Chien", image: "/chien.jpg", value: "Chien" },
-    { id: "var-4", name: "Série Éléphant", image: "/elephant.JPG", value: "Éléphant" }
+    { id: "16", name: "Série Koala Gris", image: "/koala.jpg", value: "Koala Gris" },
+    { id: "17", name: "Série Koala Marron", image: "/koala2.JPG", value: "Koala Marron" },
+    { id: "18", name: "Série Chien", image: "/chien.jpg", value: "Chien" },
+    { id: "19", name: "Série Éléphant", image: "/elephant.JPG", value: "Éléphant" }
   ],
   bundles: [
     { id: "b1", label: "Unité", bundleQty: 1, price: 39.90, popular: false },
@@ -135,20 +135,16 @@ export default function App() {
     setSelections(Array(bundle.bundleQty).fill(productData.variations[0]));
   };
 
-  const handleAddToCart = () => {
-    const variantDesc = selections.map((s: any) => s?.name || "Modèle").join(' + ');
-    setCart([...cart, {
-      cartId: Date.now().toString(),
-      name: productData.name,
-      variantName: variantDesc,
-      price: selectedBundle.price,
-      originalPrice: productData.basePrice * selectedBundle.bundleQty,
-      image: selections[0]?.image || "",
-      qty: 1
-    }]);
-    setIsCartOpen(true);
-  };
+ const handleAddToCart = () => {
+    // On récupère l'ID (16, 17, 18...) de la peluche sélectionnée par le client
+    const pelucheId = selections[0]?.id;
 
+    // Si un ID est bien trouvé, on l'envoie en TGV vers la caisse WooCommerce !
+    if (pelucheId) {
+      window.location.href = `https://somnora.mynexvia.fr/commande/?add-to-cart=${pelucheId}`;
+    }
+  };
+  
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.qty), 0);
   const cartSavings = cart.reduce((total, item) => total + ((item.originalPrice - item.price) * item.qty), 0);
 
