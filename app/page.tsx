@@ -136,12 +136,21 @@ export default function App() {
   };
 
  const handleAddToCart = () => {
-    // On récupère l'ID (16, 17, 18...) de la peluche sélectionnée par le client
-    const pelucheId = selections[0]?.id;
+    // 1. Par défaut, on prend l'ID de la peluche seule (16, 17, 18 ou 19)
+    let idPourLaCaisse = selections[0]?.id;
 
-    // Si un ID est bien trouvé, on l'envoie en TGV vers la caisse WooCommerce !
-    if (pelucheId) {
-      window.location.href = `https://somnora.mynexvia.fr/commande/?add-to-cart=${pelucheId}`;
+    // 2. MAIS si le client a sélectionné l'offre DUO (quantité = 2)
+    if (selectedBundle.bundleQty === 2) {
+      idPourLaCaisse = "31"; // L'ID WooCommerce de votre Pack Duo
+    }
+    // 3. Et s'il a sélectionné le Pack Famille (quantité = 3)
+    else if (selectedBundle.bundleQty === 3) {
+      idPourLaCaisse = "32"; // REMPLACEZ XX PAR L'ID DU PACK FAMILLE WOOCOMMERCE
+    }
+
+    // 4. On téléporte le client à la caisse avec le bon ID
+    if (idPourLaCaisse) {
+      window.location.href = `https://somnora.mynexvia.fr/commande/?add-to-cart=${idPourLaCaisse}`;
     }
   };
   
